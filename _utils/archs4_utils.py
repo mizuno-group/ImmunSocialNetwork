@@ -122,13 +122,13 @@ def index(file, sample_idx, gene_idx = [],silent=False):
             res = r.get()
             exp.append(res)
     exp = np.array(exp).T
-    exp = pd.DataFrame(exp, index=genes[gene_idx], columns=gsm_ids, dtype=np.uint32)
+    exp = pd.DataFrame(exp, index=genes[gene_idx], columns=gsm_ids, dtype=np.float32)
     return exp
 
 def get_sample(file, i, gene_idx):
     try:
         f = h5.File(file, "r")
-        temp = np.array(f["data/expression"][:,i], dtype=np.uint32)[gene_idx]
+        temp = np.array(f["data/expression"][:,i], dtype=np.float32)[gene_idx]
         f.close()
     except Exception:
         dd = np.array([0]*len(gene_idx))
