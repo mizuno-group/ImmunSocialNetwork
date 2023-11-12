@@ -32,7 +32,16 @@ def meta_local(file, search_term, meta_fields=["geo_accession", "series_id", "ch
 
     library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
     if remove_sc:
-        target_idx = np.where((library_source == 'transcriptomic'))[0]
+        try:
+            """
+            Gene level and Transcript level
+            """
+            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+            print("Gene selection from singlecellprobability")
+        except:
+            """TPM level"""
+            target_idx = np.where((library_source == 'transcriptomic'))[0]
+            print("Gene selection from library_source")
     else:
         target_idx = np.where((library_source == 'transcriptomic') | (library_source == 'transcriptomic single cell'))[0]
     idx = sorted(list(set(idx).intersection(set(target_idx))))
@@ -73,22 +82,89 @@ def meta_info(file, search_term, meta_fields=["geo_accession", "series_id", "cha
 
         library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
         if remove_sc:
-            target_idx = np.where((library_source == 'transcriptomic'))[0]
+            try:
+                """
+                Gene level and Transcript level
+                """
+                target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+                print("Gene selection from singlecellprobability")
+            except:
+                """TPM level"""
+                target_idx = np.where((library_source == 'transcriptomic'))[0]
+                print("Gene selection from library_source")
         else:
             target_idx = np.where((library_source == 'transcriptomic') | (library_source == 'transcriptomic single cell'))[0]
         idx = sorted(list(set(idx).intersection(set(target_idx))))
     return meta.iloc[:,idx].T
 
-def samples_local(file, sample_ids, silent=False):
+def characteristics_ch1_selection(file, search_term, meta_fields=["geo_accession", "series_id", "characteristics_ch1", "extract_protocol_ch1", "source_name_ch1", "title"],remove_sc=True, silent=False):
+    search_term = search_term.upper()
+    f = h5.File(file, "r")
+    meta = []
+    mfields = []
+    for field in tqdm.tqdm(meta_fields, disable=not silent):
+        if field in f["meta"]["samples"].keys():
+            try:
+                meta.append([x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"][field]))])
+                mfields.append(field)
+            except Exception:
+                x=0
+    meta = pd.DataFrame(meta, index=mfields ,columns=[x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"]["geo_accession"]))])
+
+    library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
+    if remove_sc:
+        try:
+            """
+            Gene level and Transcript level
+            """
+            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+            print("Gene selection from singlecellprobability")
+        except:
+            """TPM level"""
+            target_idx = np.where((library_source == 'transcriptomic'))[0]
+            print("Gene selection from library_source")
+    else:
+        target_idx = np.where((library_source == 'transcriptomic') | (library_source == 'transcriptomic single cell'))[0]
+    meta = meta.iloc[:,target_idx].T
+
+    # search term selection
+    target_meta = meta[meta["characteristics_ch1"].str.contains(search_term)]
+
+    return target_meta
+    
+
+    """
+    search_term = search_term.upper()
+    field = 'characteristics_ch1'
+    f = h5.File(file, "r")
+
+    meta = [x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"][field]))]
+    meta = pd.DataFrame(meta, columns=[field] ,index=[x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"]["geo_accession"]))])
+
+    # sc selection
+    library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
+    if remove_sc:
+        target_idx = np.where((library_source == 'transcriptomic'))[0]
+    else:
+        target_idx = np.where((library_source == 'transcriptomic') | (library_source == 'transcriptomic single cell'))[0]
+    meta = meta.iloc[target_idx,:]
+
+    # search term selection
+    target_meta = meta[meta[field].str.contains(search_term)]
+
+    return target_meta
+    """
+
+def samples_local(file,sample_ids,silent=False,row_type='transcript'):
     sample_ids = set(sample_ids)
     f = h5.File(file, "r")
     samples = [x.decode("UTF-8") for x in np.array(f["meta/samples/geo_accession"])]
     f.close()
     idx = [i for i,x in enumerate(samples) if x in sample_ids]
     if len(idx) > 0:
-        return index(file, idx, silent=silent)
+        return index(file, idx, silent=silent, row_type=row_type)
 
-def index(file, sample_idx, gene_idx = [],silent=False):
+def index(file,sample_idx,gene_idx=[],silent=False,row_type='transcript'):
     """
     Retrieve gene expression data from a specified file for the given sample and gene indices.
 
@@ -103,10 +179,18 @@ def index(file, sample_idx, gene_idx = [],silent=False):
     """
     sample_idx = sorted(sample_idx)
     gene_idx = sorted(gene_idx)
-    row_encoding = "meta/transcripts/ensembl_id"
+    if row_type == 'transcript':
+        row_encoding = "meta/transcripts/ensembl_id"
+    elif row_type == 'gene':
+        row_encoding = "meta/genes/symbol"
+    else:
+        pass
 
     f = h5.File(file, "r")
-    genes = np.array([x.decode("UTF-8") for x in np.array(f[row_encoding])])
+    try:
+        genes = np.array([x.decode("UTF-8") for x in np.array(f[row_encoding])])
+    except:
+        raise ValueError("!! Maybe the row_type is inappropriate !!")
     if len(gene_idx) == 0:
         gene_idx = list(range(len(genes)))
     if len(sample_idx) == 0:
