@@ -21,6 +21,8 @@ import re
 import multiprocessing
 import random
 
+SC_THRESHOLD = 0.01
+
 # %%
 def meta_local(file, search_term, meta_fields=["geo_accession", "series_id", "characteristics_ch1", "extract_protocol_ch1", "source_name_ch1", "title"],remove_sc=True, silent=False):
     f = h5.File(file, "r")
@@ -36,7 +38,7 @@ def meta_local(file, search_term, meta_fields=["geo_accession", "series_id", "ch
             """
             Gene level and Transcript level
             """
-            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < SC_THRESHOLD)[0]
             print("Gene selection from singlecellprobability")
         except:
             """TPM level"""
@@ -86,7 +88,7 @@ def meta_info(file, search_term, meta_fields=["geo_accession", "series_id", "cha
                 """
                 Gene level and Transcript level
                 """
-                target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+                target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < SC_THRESHOLD)[0]
                 print("Gene selection from singlecellprobability")
             except:
                 """TPM level"""
@@ -108,7 +110,12 @@ def characteristics_ch1_selection(file, search_term, meta_fields=["geo_accession
                 meta.append([x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"][field]))])
                 mfields.append(field)
             except Exception:
-                x=0
+                try:
+                    meta.append(list(np.array(f["meta"]["samples"][field])))
+                    mfields.append(field)
+                except:
+                    print(field,": something is wrong.")
+                    x=0
     meta = pd.DataFrame(meta, index=mfields ,columns=[x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"]["geo_accession"]))])
 
     library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
@@ -117,7 +124,7 @@ def characteristics_ch1_selection(file, search_term, meta_fields=["geo_accession
             """
             Gene level and Transcript level
             """
-            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < 0.5)[0]
+            target_idx = np.where(np.array(f["meta/samples/singlecellprobability"]) < SC_THRESHOLD)[0]
             print("Gene selection from singlecellprobability")
         except:
             """TPM level"""
@@ -184,6 +191,7 @@ def index(file,sample_idx,gene_idx=[],silent=False,row_type='transcript'):
     elif row_type == 'gene':
         row_encoding = "meta/genes/symbol"
     else:
+        raise ValueError("!! Maybe the row_type is inappropriate !!")
         pass
 
     f = h5.File(file, "r")
