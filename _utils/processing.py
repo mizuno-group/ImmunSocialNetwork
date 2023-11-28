@@ -205,6 +205,19 @@ def multi_batch_norm(df,lst_lst_batch=[[],[]],do_plots=True):
             pass
     return df_c
 
+def batch_id_converter(l:list=['a','a','a','b','b','c']):
+    """ Create batch list for batch_norm()
+
+    Args:
+        l (list, optional): _description_. Defaults to ['a','a','a','b','b','c'].
+
+    Returns:
+        list: [0, 0, 0, 1, 1, 2]
+    """
+    tmp_l = sorted(set(l),key=l.index)
+    batch_l = [tmp_l.index(k) for k in l]
+    return batch_l
+
 def quantile(df,method="median"):
     """
     quantile normalization of dataframe (variable x sample)
