@@ -1,0 +1,92 @@
+Type,Sub-type,Registered Name
+Hepatocyte,Hepatocyte,Hepatocellular cell
+,,Hepatocyte
+,,Mature hepatocyte
+,Hepatoblast,Hepatoblast
+Bile duct,Bile duct,Biliary cell
+,,Biliary epithelial cell
+,,Cholangiocyte
+,,Hepatobiliary cell
+Sinusoidal,Sinusoidal,Sinusoidal cell
+,,Sinusoidal endothelial cell
+,,Liver sinusoid endothelial cell(LSECs)
+,,Liver sinusoidal endothelial cell
+Liver stem cell,Liver stem cell,Liver stem cell
+,,Stem cell
+Stellate,Stellate,Stellate cell
+,,Hepatic stellate cell
+,,Ito cell (hepatic stellate cell)
+Vascular,Vascular endothelial,Vascular endothelial cell
+,,Macrovascular endothelial cell (MaVECs)
+,Vascular smooth muscle,Vascular smooth muscle cell(VSMC)
+,Artery cell,Artery cell
+,Portal vein cell,Portal vein cell
+Fibroblast,Fibroblast,Fibroblast
+,,Myofibroblast
+,Portal fibroblast,Portal fibroblast
+Megakaryocyte,Megakaryocyte,Megakaryocyte
+Erythrocyte,Erythroblast,Erythroblast
+,,Primitive erythrocyte
+,,Early erythrocyte
+,,Early erythroid cell
+,Erythroid cell,Erythroid cell
+,,Red blood cell (erythrocyte)
+,,Late erythroid cell
+Platelet,Platelet,Platelet
+Mast cell,Mast cell,Mast cell
+Neutrophil,Neutrophil,Neutrophil
+Eosinophil,Eosinophil,Eosinophil
+Basophil,Basophil,Basophil
+Monocyte,Monocyte,Monocyte
+,,Inflammatory monocyte
+,Classical monocyte,Classical monocyte
+,Nonclassical monocyte,Nonclassical monocyte
+Dendritic cell,Dendritic cell,Dendritic cell
+,cDC,Conventional dendritic cell 1(cDC1)
+,,Conventional dendritic cell 2(cDC2)
+,,Conventional dendritic cell
+,,Conventional dendritic cell(cDC)
+,pDC,Plasmacytoid dendritic cell
+,,Plasmacytoid dendritic cell(pDC)
+Macrophage,Kupffer cell,Kupffer cell
+,Macrophage,Macrophage
+,,Alternatively activated macrophage
+,,Activated macrophage
+,M1 macrophage,M1 macrophage
+,M2 macrophage,M2 macrophage
+,Monocyte-derived macrophage,Monocyte-derived macrophage
+NK,Natural killer cell,Natural killer cell
+NKT,Natural killer T(NKT) cell,Natural killer T(NKT) cell
+B,B cell,B cell
+,Pro-B cell,Pro-B cell
+,Pre-B cell,Pre-B cell
+,Naive B cell,Naive B cell
+,,Mature naive B cell
+,Memory B cell,Memory B cell
+,,Mature memory B cell
+,Plasma cell,Plasma cell
+T,T cell,T cell
+,Memory T cell,Memory T cell
+,,Memory T(Tm) cell
+,,Effector memory T cell
+,,Effector T(Teff) cell
+,,Central memory T cell
+,Naive T cell,Naive T cell
+,,Naive T(Th0) cell
+,CD4+ T,CD4+ T cell
+,,CD4+ T helper cell
+,,T helper cell
+,,T helper(Th) cell
+,CD8+ T,CD8+ T cell
+,,CD8+ cytotoxic T killer cell
+,,Cytotoxic T cell
+,,Activated CD8+ T cell
+,,Effector CD8+ T cell
+,,Naive CD8+ T cell
+,,Central memory CD8+ T cell
+,,Memory-phenotype CD8+ T cell(CD8-MP cell)
+,,Memory-like CD8+ T cell
+,Treg,Regulatory T (Treg) cell
+,,Regulatory T(Treg) cell
+,,Induced regulatory T (Treg) cell
+,,Activated regulatory T cell
