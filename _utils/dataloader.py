@@ -78,6 +78,10 @@ class ImmneNet_Dataloader():
         comb_df = pc.batch_norm(trim_df,series_batch)
         comb_df = comb_df.dropna(how='all',axis=1)
 
+        # trimming
+        fxn = lambda x : 0 if x < 0 else x
+        comb_df = comb_df.applymap(fxn)
+
         # 2. QN
         qn_df = pc.quantile(comb_df) # (18266, 183)
 

@@ -11,6 +11,7 @@ Reference: https://github.com/groovy-phazuma/ML_DL_Notebook/tree/main/Correlatio
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import seaborn as sns
 from scipy import stats
 import matplotlib.pyplot as plt
 
@@ -104,4 +105,57 @@ def permutation_test(df1,df2,x='sepal length (cm)',y='petal length (cm)',n_perm=
 
     return perm_p
 
+# %%
+class Dual_Netword_Comparison():
+    def __init__(self):
+        self.res1 = None
+        self.res2 = None
 
+    def set_dual_data(self,res1,res2):
+        self.res1 = res1
+        self.res2 = res2
+        print('Res1: {}'.format(res1.shape))
+        print('Res2: {}'.format(res2.shape))
+    
+    def set_condition(self,remove_cells=['1','2']):
+        target_cells = sorted(list(set(self.res1.columns.tolist()) - set(remove_cells)))
+        self.p_summary = pd.DataFrame(np.nan,index=target_cells,columns=target_cells)
+        for cell1 in target_cells:
+            for cell2 in target_cells:
+                if cell1 == cell2:
+                    p = np.nan
+                else:
+                    z1, z2, t, p = Cor_diff_test(self.res1,self.res2,x=cell1,y=cell2,verbose=False,do_plot=False)
+                self.p_summary[cell1][cell2] = p
+        
+        self.target_cells = target_cells
+
+    def edge_comparison(self,figsize=(15,10)):
+        cell_size = len(self.target_cells)
+        # increased edges
+        threshold = 0.05/(cell_size*cell_size/2)
+        fxn1 = lambda x : x if x<threshold else np.nan
+        increased_adj = self.p_summary.applymap(fxn1)
+
+        fig,ax = plt.subplots(figsize=figsize)
+        sns.heatmap(increased_adj,cmap='cividis',linewidths=.5,linecolor='grey')
+        plt.show()
+
+        # decreased edges
+        r_p_summary = 1-self.p_summary
+        fxn1 = lambda x : x if x<threshold else np.nan
+        decreased_adj = r_p_summary.applymap(fxn1)
+
+        fig,ax = plt.subplots(figsize=figsize)
+        sns.heatmap(decreased_adj,cmap='cividis',linewidths=.5,linecolor='grey')
+        plt.show()
+
+        # concat
+        lower_threshold = 0.05/(cell_size*cell_size/2)
+        upper_threshold = 1-0.05/(cell_size*cell_size/2)
+        fxn2 = lambda x : np.nan if (lower_threshold < x) & (x < upper_threshold) else x
+        self.sig_summary = self.p_summary.applymap(fxn2)
+
+        fig,ax = plt.subplots(figsize=figsize)
+        sns.heatmap(self.sig_summary,cmap='cividis',linewidths=.5,linecolor='grey')
+        plt.show()
