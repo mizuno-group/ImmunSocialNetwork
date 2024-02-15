@@ -52,6 +52,7 @@ class ImmneNet_Dataloader():
         self.target_info = target_info
         self.target_samples = target_info.index.tolist() # 183
         print(len(self.target_samples),"samples were selected.")
+        self.target_info = target_info
     
     def load_expression(self,tpm_path='/workspace/datasource/ARCHS4/mouse_tpm_v2.2.h5',ref_path='/workspace/datasource/Biomart/mouse_transcriptID2MGI.csv',gene_list_path='/workspace/datasource/MsigDB/231204_mouse_gene_lst.pickle'):
         # load expression data
