@@ -66,7 +66,7 @@ class CellMarkerHandler():
             tmp_res = tmp_res.dropna(subset=['Symbol'])
             if len(tmp_res)==0:
                 print(name,' has no marker gene symbol')
-            marker_res.append(sorted(tmp_res['Symbol'].unique().tolist()))
+            marker_res.append(sorted(tmp_res['Symbol'].tolist())) # Note: remove unique setting
 
         self.raw_dic = dict(zip(all_names,marker_res)) # 91 cell types
     
@@ -119,6 +119,31 @@ class CellMarkerHandler():
         fine_dic = {k:v for k,v in update_dic.items() if k not in remove_cells}
         fine_dic = {k:v for k,v in fine_dic.items() if len(v) > 0}
         self.fine_dic = fine_dic
+    
+    def upper_cut(self,threshold=50):
+        """If many marker genes are registered, cut at threshold.
 
-
+        Args:
+            threshold (int): Defaults to 50.
+        """
+        k_list = []
+        v_list = []
+        for i,k in enumerate(self.fine_dic):
+            s = len(self.fine_dic.get(k))
+            k_list.append(k)
+            if s > threshold:
+                print(s)
+                print(k,self.fine_dic.get(k))
+                c_item = dict(collections.Counter(self.fine_dic.get(k))).items()
+                c_item = sorted(c_item,key=lambda x : x[1],reverse=True)
+                tmp = []
+                for t in c_item:
+                    if t[1]==1:
+                        break
+                    else:
+                        tmp.append(t[0])
+                v_list.append(tmp)
+            else:
+                v_list.append(self.fine_dic.get(k))
+        self.final_dic = dict(zip(k_list,v_list))
             
