@@ -138,30 +138,79 @@ def characteristics_ch1_selection(file, search_term, meta_fields=["geo_accession
     target_meta = meta[meta["characteristics_ch1"].str.contains(search_term)]
 
     return target_meta
+
+def add_treatment(target_meta):
+    treatment_info = target_meta[target_meta['characteristics_ch1'].str.contains('TREATMENT')]
+
+    treatment_list = []
+    target_keys = ['TREATMENT MOLECULE', 'PRE-TREATMENT','TREATMENT/CONDITION', 'TREATMENT_SHORT_DESCRIPT', 'CHEMICAL TREATMENT', 'TREATMENT_2','TREATMENT','AAV TREATMENT', 'TREATMENT REPONSE','TREATMENT_SHORT_NAME', 'DIET AND TREATMENT','TREATMENT_(DIET+TREATMENT)', 'PATERNAL TREATMENT', 'TREATMENT DIET', 'TREATMENT_FULL_NAME', 'TREATMENT 2', 'DRUG TREATMENT','TREATMENT(1)', 'TREATMENT_1','TREATMENT_COMPOUND', 'TREATMENT GROUP', 'TREATMENT 1']
+
+    key_list = set()
+    final_info = []
+    final_idx = []
+    for idx, txt in enumerate(treatment_info['characteristics_ch1'].tolist()):
+        tmp_list = txt.split(',')
+        info_dict = each_sample_dict(tmp_list)
+        key_list = key_list | set(info_dict.keys())
+        tmp_treatment = []
+        for i,k in enumerate(info_dict):
+            if k in target_keys:
+                treatment = info_dict.get(k)
+                tmp_treatment.append(treatment)
+            else:
+                pass
+        if len(tmp_treatment)>0:
+            tmp_treatment = sorted(tmp_treatment,key=len,reverse=True)
+            final_info.append(tmp_treatment[0])
+            final_idx.append(idx)
+        else:
+            pass
+    # Add treatment info
+    target_info = treatment_info.iloc[final_idx]
+    target_info['treatment']=final_info
     
+    return target_info
 
+    
+def update(tmp_list):
+    """ Concat the unexpected separation.
+    Args:
+        tmp_list (list): ['TISSUE: LIVER', 'CELL TYPE: TRNK', 'GENOTYPE: WT', 'TREATMENT: 50 NG/ML PMA', ' 1 UG/ML IONOMYCIN']
+
+    Returns:
+        list: ['TISSUE: LIVER','CELL TYPE: TRNK','GENOTYPE: WT','TREATMENT: 50 NG/ML PMA 1 UG/ML IONOMYCIN']
     """
-    search_term = search_term.upper()
-    field = 'characteristics_ch1'
-    f = h5.File(file, "r")
+    updated_list = []
+    for t in tmp_list:
+        if ': ' in t:
+            updated_list.append(t)
+        else:
+            updated_list[-1] = updated_list[-1]+t
+    return updated_list
 
-    meta = [x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"][field]))]
-    meta = pd.DataFrame(meta, columns=[field] ,index=[x.decode("UTF-8").upper() for x in list(np.array(f["meta"]["samples"]["geo_accession"]))])
-
-    # sc selection
-    library_source =np.array([x.decode("UTF-8") for x in np.array(f["meta/samples/library_source"])])
-    if remove_sc:
-        target_idx = np.where((library_source == 'transcriptomic'))[0]
-    else:
-        target_idx = np.where((library_source == 'transcriptomic') | (library_source == 'transcriptomic single cell'))[0]
-    meta = meta.iloc[target_idx,:]
-
-    # search term selection
-    target_meta = meta[meta[field].str.contains(search_term)]
-
-    return target_meta
+def each_sample_dict(tmp_list):
     """
+    Args:
+        tmp_list (list): comma separated list
+            ['AGE: 28 WKS AT THE TIME OF RNA ISOLATION',
+            'BACKGROUND STRAIN: C57BL/129SV/FVB',
+            'GENOTYPE: 9V/NULL',
+            'TREATMENT: CZ (IMIGLUCERASE)',
+            'TISSUE: LIVER']
+    """
+    tmp_list = update(tmp_list)
+    k_list = []
+    v_list = []
+    for t in tmp_list:
+        k = t.split(': ')[0]
+        v = t.split(': ')[1]
+        k_list.append(k)
+        v_list.append(v)
+    info_dict = dict(zip(k_list,v_list))
 
+    return info_dict
+
+# %%
 def samples_local(file,sample_ids,silent=False,row_type='transcript'):
     sample_ids = set(sample_ids)
     f = h5.File(file, "r")
@@ -226,4 +275,5 @@ def get_sample(file, i, gene_idx):
         dd = np.array([0]*len(gene_idx))
         return dd
     return temp
+
 # %%
