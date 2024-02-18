@@ -22,9 +22,11 @@ from _utils import processing as pc
 
 # %%
 class ImmneNet_Dataloader():
-    def __init__(self,info_path):
-        self.info_path = info_path
-        self.raw_info = pd.read_csv(info_path,index_col=0)
+    def __init__(self,info_path=None,raw_info=None):
+        if info_path is None:
+            self.raw_info = raw_info
+        else:
+            self.raw_info = pd.read_csv(info_path,index_col=0)
 
         """
         	geo_accession	series_id	characteristics_ch1                                 source_name_ch1     singlecellprobability	treatment
