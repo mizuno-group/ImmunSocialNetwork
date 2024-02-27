@@ -21,7 +21,7 @@ import re
 import multiprocessing
 import random
 
-SC_THRESHOLD = 0.01
+SC_THRESHOLD = 0.1 # 240225 changed 0.01 --> 0.3
 
 # %%
 def meta_local(file, search_term, meta_fields=["geo_accession", "series_id", "characteristics_ch1", "extract_protocol_ch1", "source_name_ch1", "title"],remove_sc=True, silent=False):
@@ -203,7 +203,7 @@ def each_sample_dict(tmp_list):
     v_list = []
     for t in tmp_list:
         k = t.split(': ')[0]
-        v = t.split(': ')[1]
+        v = t.split(k+': ')[1] # 'treatment: AAA: BBB' --> AAA: BBB
         k_list.append(k)
         v_list.append(v)
     info_dict = dict(zip(k_list,v_list))
