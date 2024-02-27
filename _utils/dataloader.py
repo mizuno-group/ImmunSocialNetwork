@@ -37,8 +37,11 @@ class ImmneNet_Dataloader():
             GSM1088288	    GSE44640	AGE: 28 WKS AT THE TIME OF RNA ISOLATION,BACKG...	LIVER_CZ_9V/NULL	0.000516	            CZ (IMIGLUCERASE)
         """
 
-    def sample_selection(self,condition:list):
-        target_info = self.raw_info[self.raw_info['treatment'].isin(condition)]
+    def sample_selection(self,condition:list=[],accession_list:list=[]):
+        if len(condition) > 0:
+            target_info = self.raw_info[self.raw_info['treatment'].isin(condition)]
+        elif len(accession_list) > 0:
+            target_info = self.raw_info[self.raw_info['geo_accession'].isin(accession_list)]
 
         # selection based on batch size
         batchsize_threshold = 3

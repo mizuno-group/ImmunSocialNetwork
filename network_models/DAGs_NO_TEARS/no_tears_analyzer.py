@@ -36,9 +36,9 @@ class NOTEARS_Analyzer():
             df_new[col] = pd.cut(df_new[col], bins, labels=False) # Note labels=False
         self.input_data = df_new
     
-    def create_skelton(self,do_plot=True):
+    def create_skelton(self,do_plot=True,tabu_child_nodes=['Hepatocyte']):
         # DAGs with NO TEARS (Dense)
-        self.sm = from_pandas(self.input_data)
+        self.sm = from_pandas(self.input_data,tabu_child_nodes=tabu_child_nodes)
 
         if do_plot:
             # Visualize
@@ -69,7 +69,7 @@ class NOTEARS_Analyzer():
     def create_dags(self,weight_threshold=0.3,do_plot=True):
         # Trimming
         self.sm.remove_edges_below_threshold(weight_threshold)
-        edge_width = [ d['weight']*1 for (u,v,d) in self.sm.edges(data=True)]
+        edge_width = [d['weight']*1 for (u,v,d) in self.sm.edges(data=True)]
 
         if do_plot:
             fig, ax = plt.subplots(figsize=(16, 16))
@@ -97,7 +97,7 @@ class NOTEARS_Analyzer():
                         ax=ax)
         plt.show()
     
-    def save_dag(self,save_dir='/Path/to/the/directory'):
+    def save_dag(self,save_dir='/Path/to/the/directory',reverse=False):
         node_names = self.input_data.columns.tolist()
         dag = nx.DiGraph()
 
@@ -108,10 +108,11 @@ class NOTEARS_Analyzer():
                 pn_labels.append('positive')
             else:
                 pn_labels.append('negative')
-            new_s = node_names.index(u)
+            new_u = node_names.index(u)
             new_v = node_names.index(v)
-            dag.add_edge(new_v, new_s, weight=abs(d['weight'])) # NOTE not s,v but v,s
-            new_idx.append('{} (interacts with) {}'.format(new_v,new_s))
+            dag.add_edge(new_u, new_v, weight=abs(d['weight']))
+            new_idx.append('{} (interacts with) {}'.format(new_u,new_v))
+
         nx.draw(dag, arrows=True, with_labels=True)
 
         # Node annotation
@@ -122,5 +123,12 @@ class NOTEARS_Analyzer():
         edge_df = pd.DataFrame({'Edge_Key':new_idx,'PN':pn_labels})
         edge_df.to_csv(save_dir+'/edge_type_df.csv')
 
-        nx.write_gml(dag,save_dir+'/causualnex_dag.gml')
+        # Save networkx
+        # TODO: avoid networkx error
+        if reverse:
+            nx.write_gml(dag.reverse(),save_dir+'/causualnex_dag.gml')
+        else:
+            nx.write_gml(dag,save_dir+'/causualnex_dag.gml')
+
+        
 
