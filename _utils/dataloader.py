@@ -59,7 +59,7 @@ class ImmneNet_Dataloader():
         print(len(self.target_samples),"samples were selected.")
         self.target_info = target_info
     
-    def load_expression(self,tpm_path='/workspace/datasource/ARCHS4/mouse_tpm_v2.2.h5',ref_path='/workspace/datasource/Biomart/mouse_transcriptID2MGI.csv',gene_list_path='/workspace/datasource/MsigDB/231204_mouse_gene_lst.pickle'):
+    def load_expression(self,tpm_path='/workspace/datasource/ARCHS4/mouse_tpm_v2.2.h5',ref_path='/workspace/datasource/Biomart/mouse_transcriptID2MGI.csv',gene_list_path='/workspace/datasource/MsigDB/231204_mouse_gene_lst.pickle',processing=True):
         # load expression data
         df = a4u.samples_local(file=tpm_path, sample_ids=self.target_samples, row_type='transcript')
 
@@ -72,23 +72,28 @@ class ImmneNet_Dataloader():
         mouse_gene_list = pd.read_pickle(gene_list_path)
         mouse_gene_list = [t.upper() for t in mouse_gene_list]
         common = sorted(list(set(ann_df.index.tolist()) & set(mouse_gene_list)))
-        ann_df = ann_df.loc[common]
+        self.ann_df = ann_df.loc[common]
 
-        # remove redundant genes
-        trim_df = ann_df.replace(0.0,np.nan).dropna(how='all').replace(np.nan,0) # (18266, 183)
+        if processing:
+            # remove redundant genes
+            trim_df = self.ann_df.replace(0.0,np.nan).dropna(how='all').replace(np.nan,0) # (18266, 183)
+            # 1. combat
+            try:
+                series_list = self.target_info.loc[trim_df.columns.tolist()]['series_id'].tolist()
+                series_batch = pc.batch_id_converter(series_list)
 
-        # 1. combat
-        series_list = self.target_info.loc[trim_df.columns.tolist()]['series_id'].tolist()
-        series_batch = pc.batch_id_converter(series_list)
+                comb_df = pc.batch_norm(trim_df,series_batch)
+                df = comb_df.dropna(how='all',axis=1)
+            except:
+                print("Bathc Normalization was not conducted.")
 
-        comb_df = pc.batch_norm(trim_df,series_batch)
-        comb_df = comb_df.dropna(how='all',axis=1)
+            # trimming
+            fxn = lambda x : 0 if x < 0 else x
+            df = df.applymap(fxn)
 
-        # trimming
-        fxn = lambda x : 0 if x < 0 else x
-        comb_df = comb_df.applymap(fxn)
+            # 2. QN
+            qn_df = pc.quantile(df) # (18266, 183)
 
-        # 2. QN
-        qn_df = pc.quantile(comb_df) # (18266, 183)
-
-        return qn_df
+            return qn_df
+        else:
+            pass

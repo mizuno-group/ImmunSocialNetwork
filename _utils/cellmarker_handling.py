@@ -129,7 +129,7 @@ class CellMarkerHandler():
         k_list = []
         v_list = []
         for i,k in enumerate(self.fine_dic):
-            s = len(self.fine_dic.get(k))
+            s = len(set(self.fine_dic.get(k))) # Update to be unique
             k_list.append(k)
             if s > threshold:
                 print(s)

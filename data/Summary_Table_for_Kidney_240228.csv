@@ -1,0 +1,115 @@
+Type,Upper-layer,Sub-type,Registered Name
+Cortex,Cortex,Cortex,Cortical cell
+,,,Cortical stromal cell
+,,,Interstitial Cell (Cortical)
+Medullary,Medullary,Medullary,Medullary cell
+,,,Interstitial Cell (Medullary)
+Nephron,Renal corpusle cell,Renal corpusle cell,Renal corpusle cell
+,,Parietal epithelial cell(PEC),Parietal epithelial cell(PEC)
+,,,Intermediate parietal epithelial cell (PEC)
+,,Macula densa cell,Macula densa cell
+,,Granular cell of afferent arteriole,Granular cell of afferent arteriole
+,,Mesangial cell,Mesangial cell
+,,,Intraglomerular mesangial cell
+,,Podocyte,Podocyte
+,Collecting duct,Collecting duct,Collecting Duct Principal Cell
+,,,Principal cell
+,,,Collecting duct & Ureteric Bud cell
+,,,Collecting duct principal cell
+,,,Collecting duct transient cell
+,,,Connecting tubular cell
+,,,Inner Medullary Collecting Ductal cell
+,,,Duct principal cell
+,,Intercalated cell,Intercalated cell
+,,,Intercalated A cell
+,,,Intercalated B cell
+,,,Collecting duct intercalated cell
+,Henle,Henle,Distal tubule & loop of Henle cell
+,,,Endothelial of Henle
+,,,Ascending loop of Henle cell
+,,,Loop of Henle cell
+,,,Long Descending Limb (Outer Medulla) cell
+,,,Thick ascending loop of Henle(TALH) cell
+,,,Thick Ascending Limb cell
+,,,Thin Ascending Limb cell
+,,Tubular cell,Tubular cell
+,,,Tubular epithelial cell(TEC)
+,,,Tubulointerstitial cell
+,,Proximal tubular cell,Proximal tubular cell
+,,,Proximal tubule cell
+,,,Proximal convoluted tubular cell
+,,,Proximal segment cell
+,,,Proximal straight tubular cell
+,,,General proximal cell
+,,,S1 proximal cell
+,,,S1/S2 proximal tubule cell
+,,,S2 proximal cell
+,,,S3 proximal cell
+,,,S3 proximal tubule cell
+,,Distal tubular cell,Distal tubular cell
+,,,Distal convoluted tubular cell
+,,Connecting tubular cell,Connecting tubular cell
+Pericyte,Pericyte,Pericyte,Pericyte
+,,,Contractile Pericyte
+Fibroblast,Fibroblast,Fibroblast,Fibroblast
+,,Myofibroblast,Myofibroblast
+,,,Activated myofibroblast
+Vascular,Vascular,Vascular,Vascular endothelial cell
+,,,Vascular smooth muscle cell(VSMC)
+Mast cell,Mast cell,Mast cell,Mast cell
+Neutrophil,Neutrophil,Neutrophil,Neutrophil
+Eosinophil,Eosinophil,Eosinophil,Eosinophil
+Basophil,Basophil,Basophil,Basophil
+Monocyte,Monocyte,Monocyte,Monocyte
+,,,Inflammatory monocyte
+,,Classical monocyte,Classical monocyte
+,,Nonclassical monocyte,Nonclassical monocyte
+Dendritic cell,Dendritic cell,Dendritic cell,Dendritic cell
+,,,Monocyte-derived dendritic cell
+,,cDC,Conventional dendritic cell 1(cDC1)
+,,,Conventional dendritic cell 2(cDC2)
+,,,Conventional dendritic cell
+,,,Conventional dendritic cell(cDC)
+,,pDC,Plasmacytoid dendritic cell
+,,,Plasmacytoid dendritic cell(pDC)
+,Macrophage,Macrophage,Macrophage
+,,,Alternatively activated macrophage
+,,,Activated macrophage
+,,M1 macrophage,M1 macrophage
+,,M2 macrophage,M2 macrophage
+,,Monocyte-derived macrophage,Monocyte-derived macrophage
+NK,Natural killer cell,Natural killer cell,Natural killer cell
+NKT,Natural killer T(NKT) cell,Natural killer T(NKT) cell,Natural killer T(NKT) cell
+B,B,B cell,B cell
+,,Pro-B cell,Pro-B cell
+,,Pre-B cell,Pre-B cell
+,,Naive B cell,Naive B cell
+,,,Mature naive B cell
+,,Memory B cell,Memory B cell
+,,,Mature memory B cell
+,,Plasma cell,Plasma cell
+T,,T cell,T cell
+,,Memory T cell,Memory T cell
+,,,Memory T(Tm) cell
+,,,Effector memory T cell
+,,,Effector T(Teff) cell
+,,,Central memory T cell
+,,Naive T cell,Naive T cell
+,,,Naive T(Th0) cell
+,CD4+ T,CD4+ T,CD4+ T cell
+,,,CD4+ T helper cell
+,,,T helper cell
+,,,T helper(Th) cell
+,CD8+ T,CD8+ T,CD8+ T cell
+,,,CD8+ cytotoxic T killer cell
+,,,Cytotoxic T cell
+,,,Activated CD8+ T cell
+,,,Effector CD8+ T cell
+,,,Naive CD8+ T cell
+,,,Central memory CD8+ T cell
+,,,Memory-phenotype CD8+ T cell(CD8-MP cell)
+,,,Memory-like CD8+ T cell
+,Treg,Treg,Regulatory T (Treg) cell
+,,,Regulatory T(Treg) cell
+,,,Induced regulatory T (Treg) cell
+,,,Activated regulatory T cell

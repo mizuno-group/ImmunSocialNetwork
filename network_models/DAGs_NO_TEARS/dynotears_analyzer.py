@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 2024-02-15 (Thu) 16:29:45
+Created on 2024-04-24 (Wed) 22:33:42
 
 @author: I.Azuma
 """
@@ -9,37 +9,21 @@ import copy
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
-from causalnex.structure.notears import from_pandas
-
+from causalnex.structure.dynotears import from_pandas_dynamic
 
 # %%
-class NOTEARS_Analyzer():
+class DYNOTEARS_Analyzer():
     def __init__(self):
-        self.deconv_res = None
+        self.time_series = None
         self.sm_l = None
 
-    def set_data(self,deconv_res:pd.DataFrame):
-        """ Set deconvolution result as input dataframe
-
-        Args:
-            deconv_res (pd.DataFrame): Samples are in rows and cell types are in columns.
-            	        Hepatocyte	Hepatoblast	Cholangiocyte
-            GSM1400569	0.026937	0.007902	0.012417
-            GSM1400571	0.026574	0.011447	0.005951
-            GSM1400573	0.026255	0.014530	0.008820
-        """
-        self.deconv_res = deconv_res
-        print(self.deconv_res.shape)
+    def set_data(self,time_series:list):
+        self.time_series = time_series
+        print(f"Sample: {len(self.time_series)}, Time Points: {self.time_series[0].shape[0]}, Variable Size: {self.time_series[0].shape[1]}")
     
-    def binning(self,bins=10):
-        df_new = self.deconv_res.copy()
-        for col in self.deconv_res.columns.tolist():
-            df_new[col] = pd.cut(df_new[col], bins, labels=False) # Note labels=False
-        self.input_data = df_new
-    
-    def create_skelton(self,do_plot=True,tabu_child_nodes=['Hepatocyte']):
-        # DAGs with NO TEARS (Dense)
-        self.sm = from_pandas(self.input_data,tabu_child_nodes=tabu_child_nodes)
+    def create_skelton(self,do_plot=True,tabu_child_nodes=[],p=2,lambda_w=0.1,lambda_a=0.1):
+        # DYNOTEARS
+        self.sm = from_pandas_dynamic(time_series=self.time_series,p=p,lambda_w=lambda_w,lambda_a=lambda_a,tabu_child_nodes=tabu_child_nodes)
 
         if do_plot:
             # Visualize
@@ -102,7 +86,7 @@ class NOTEARS_Analyzer():
         if self.sm_l is None:
             self.sm_l = self.sm.get_largest_subgraph()
 
-        node_names = self.input_data.columns.tolist()
+        node_names = list(self.sm_l.nodes())
         dag = nx.DiGraph()
 
         new_idx = []
@@ -129,9 +113,11 @@ class NOTEARS_Analyzer():
                 break
 
         nx.draw(dag, arrows=True, with_labels=True)
+        node_names = [t.replace('lag','') for t in node_names]
 
         # Node annotation
         node_names_df = pd.DataFrame({'ID':[i for i in range(len(node_names))],'name':node_names})
+        node_names_df['lag'] = [t.split('_')[-1] for t in node_names_df['name'].tolist()]
         node_names_df.to_csv(save_dir + '/node_name_df.csv')
 
         # Edge type annotation
@@ -143,4 +129,3 @@ class NOTEARS_Analyzer():
 
         print("Node Size: {}".format(len(dag.nodes())))
         print("Edge Size: {}".format(len(dag.edges())))
-
