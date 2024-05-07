@@ -10,6 +10,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from causalnex.structure.notears import from_pandas
+from causalnex.structure.pytorch.notears import from_pandas as from_pandas_pytorch
 
 
 # %%
@@ -17,6 +18,8 @@ class NOTEARS_Analyzer():
     def __init__(self):
         self.deconv_res = None
         self.sm_l = None
+        self.dag = None
+        self.input_data = None
 
     def set_data(self,deconv_res:pd.DataFrame):
         """ Set deconvolution result as input dataframe
@@ -37,9 +40,14 @@ class NOTEARS_Analyzer():
             df_new[col] = pd.cut(df_new[col], bins, labels=False) # Note labels=False
         self.input_data = df_new
     
-    def create_skelton(self,do_plot=True,tabu_child_nodes=['Hepatocyte']):
+    def create_skelton(self,do_plot=True,tabu_child_nodes=['Hepatocyte'],pytorch=False):
+        if self.input_data is None:
+            self.input_data = self.deconv_res
         # DAGs with NO TEARS (Dense)
-        self.sm = from_pandas(self.input_data,tabu_child_nodes=tabu_child_nodes)
+        if pytorch:
+            self.sm = from_pandas_pytorch(self.input_data,tabu_child_nodes=tabu_child_nodes)
+        else:
+            self.sm = from_pandas(self.input_data,tabu_child_nodes=tabu_child_nodes)
 
         if do_plot:
             # Visualize
@@ -66,6 +74,24 @@ class NOTEARS_Analyzer():
         ax.grid(color="#ababab",linewidth=0.5)
         plt.title("Edge Weight Distribution")
         plt.show()
+
+        # construct raw graph
+        node_names = self.input_data.columns.tolist()
+        raw_dag = nx.DiGraph()
+        new_idx = []
+        pn_labels = []
+        source_labels = []
+        target_labels = []
+        for (u,v,d) in self.sm.edges(data=True):
+            new_u = node_names.index(u)
+            new_v = node_names.index(v)
+            raw_dag.add_edge(new_u, new_v, weight=abs(d['weight']))
+            new_idx.append('{} (interacts with) {}'.format(new_u,new_v))
+            source_labels.append(new_u)
+            target_labels.append(new_v)
+        
+        self.raw_dag = raw_dag
+
     
     def create_dags(self,weight_threshold=0.3,do_plot=True):
         # Trimming
@@ -98,7 +124,7 @@ class NOTEARS_Analyzer():
                         ax=ax)
         plt.show()
     
-    def save_dag(self,save_dir='/Path/to/the/directory',weight_threshold=0.0,edge_limit=1000000):
+    def save_dag(self,save_dir=None,weight_threshold=0.0,edge_limit=1000000):
         if self.sm_l is None:
             self.sm_l = self.sm.get_largest_subgraph()
 
@@ -130,17 +156,20 @@ class NOTEARS_Analyzer():
 
         nx.draw(dag, arrows=True, with_labels=True)
 
-        # Node annotation
-        node_names_df = pd.DataFrame({'ID':[i for i in range(len(node_names))],'name':node_names})
-        node_names_df.to_csv(save_dir + '/node_name_df.csv')
+        if save_dir is not None:
+            # save_dir='/Path/to/the/directory'
+            # Node annotation
+            node_names_df = pd.DataFrame({'ID':[i for i in range(len(node_names))],'name':node_names})
+            node_names_df.to_csv(save_dir + '/node_name_df.csv')
 
-        # Edge type annotation
-        edge_df = pd.DataFrame({'Edge_Key':new_idx,'PN':pn_labels,'Source':source_labels,'Target':target_labels})
-        edge_df.to_csv(save_dir+'/edge_type_df.csv')
+            # Edge type annotation
+            edge_df = pd.DataFrame({'Edge_Key':new_idx,'PN':pn_labels,'Source':source_labels,'Target':target_labels})
+            edge_df.to_csv(save_dir+'/edge_type_df.csv')
 
-        # Save networkx
-        nx.write_gml(dag, save_dir+'/causualnex_dag.gml')
+            # Save networkx
+            nx.write_gml(dag, save_dir+'/causualnex_dag.gml')
 
-        print("Node Size: {}".format(len(dag.nodes())))
-        print("Edge Size: {}".format(len(dag.edges())))
+            print("Node Size: {}".format(len(dag.nodes())))
+            print("Edge Size: {}".format(len(dag.edges())))
 
+        self.dag = dag
