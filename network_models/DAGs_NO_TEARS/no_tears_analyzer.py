@@ -135,7 +135,8 @@ class NOTEARS_Analyzer():
         pn_labels = []
         source_labels = []
         target_labels = []
-        for (u,v,d) in self.sm_l.edges(data=True):
+        sorted_edge_list = sorted(self.sm_l.edges(data=True),key=lambda x : x[-1]['weight'],reverse=True)  # sort by weight
+        for (u,v,d) in sorted_edge_list:
             if abs(d['weight']) < weight_threshold:
                 continue
 

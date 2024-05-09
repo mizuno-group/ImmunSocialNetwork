@@ -35,6 +35,8 @@ from typing import Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 from sklearn.utils import check_array
 
 from network_models.my_estimator.core import NotearsMLP
@@ -49,6 +51,7 @@ __all__ = ["from_numpy", "from_pandas"]
 def from_numpy(
     X: np.ndarray,
     W: np.ndarray,
+    binary_mask: bool = True,
     dist_type_schema: Dict[int, str] = None,
     ls_gamma: float = 0.5,
     lasso_beta: float = 0.0,
@@ -187,7 +190,7 @@ def from_numpy(
         use_gpu=use_gpu,
         **kwargs,
     )
-    model.fit(X, W, max_iter=max_iter)
+    model.fit(X, W, max_iter=max_iter, w_binary_mask=binary_mask)
     sm = StructureModel(model.adj)
 
     if w_threshold:
@@ -234,6 +237,7 @@ def from_numpy(
 def from_pandas(
     X: pd.DataFrame,
     W: pd.DataFrame,
+    binary_mask: bool = True,
     dist_type_schema: Dict[Union[str, int], str] = None,
     ls_gamma: float = 0.5,
     lasso_beta: float = 0.0,
@@ -338,6 +342,7 @@ def from_pandas(
     g = from_numpy(
         X=data.values,
         W=w_data.values,
+        binary_mask = binary_mask,
         dist_type_schema=dist_type_schema,
         ls_gamma=ls_gamma,
         lasso_beta=lasso_beta,
@@ -402,3 +407,79 @@ def from_pandas(
     sm.graph["graph_collapsed"] = sm_collapsed
 
     return sm
+
+def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=1000000,do_plot=True):
+    if do_plot:
+        # Visualize
+        fig, ax = plt.subplots(figsize=(8, 8))
+        nx.draw_circular(sm,
+                        with_labels=True,
+                        font_size=10,
+                        node_size=1000,
+                        arrowsize=10,
+                        alpha=0.5,
+                        ax=ax)
+        plt.plot()
+        plt.show()
+
+        # Edge weight distribution
+        fig,ax = plt.subplots()
+        weight_list = [d['weight'] for (u,v,d) in sm.edges(data=True)]
+        plt.plot(sorted(weight_list))
+        plt.gca().spines['right'].set_visible(False)
+        plt.gca().spines['top'].set_visible(False)
+        plt.gca().yaxis.set_ticks_position('left')
+        plt.gca().xaxis.set_ticks_position('bottom')
+        ax.set_axisbelow(True)
+        ax.grid(color="#ababab",linewidth=0.5)
+        plt.title("Edge Weight Distribution")
+        plt.show()
+
+    # DAG construction
+    sm_l = sm.get_largest_subgraph()
+    dag = nx.DiGraph()
+
+    new_idx = []
+    pn_labels = []
+    source_labels = []
+    target_labels = []
+    sorted_edge_list = sorted(sm_l.edges(data=True),key=lambda x : x[-1]['weight'],reverse=True)  # sort by weight
+    for (u,v,d) in sorted_edge_list:
+        if abs(d['weight']) < weight_threshold:
+            continue
+
+        if d['weight'] > 0:
+            pn_labels.append('positive')
+        else:
+            pn_labels.append('negative')
+        new_u = node_names.index(u)
+        new_v = node_names.index(v)
+        dag.add_edge(new_u, new_v, weight=abs(d['weight']))
+        new_idx.append('{} (interacts with) {}'.format(new_u,new_v))
+        source_labels.append(new_u)
+        target_labels.append(new_v)
+
+        if len(new_idx) == edge_limit:
+            print("Reached the upper size.")
+            break
+
+    nx.draw(dag, arrows=True, with_labels=True)
+
+    if save_dir is not None:
+        # save_dir='/Path/to/the/directory'
+        # Node annotation
+        node_names_df = pd.DataFrame({'ID':[i for i in range(len(node_names))],'name':node_names})
+        node_names_df.to_csv(save_dir + '/node_name_df.csv')
+
+        # Edge type annotation
+        edge_df = pd.DataFrame({'Edge_Key':new_idx,'PN':pn_labels,'Source':source_labels,'Target':target_labels})
+        edge_df.to_csv(save_dir+'/edge_type_df.csv')
+
+        # Save networkx
+        nx.write_gml(dag, save_dir+'/causualnex_dag.gml')
+    
+    print("Node Size: {}".format(len(dag.nodes())))
+    print("Edge Size: {}".format(len(dag.edges())))
+
+    return dag
+

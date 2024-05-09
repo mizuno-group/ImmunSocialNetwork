@@ -246,6 +246,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
         self,
         x: np.ndarray,
         w: np.ndarray,
+        w_binary_mask: bool = True,
         max_iter: int = 100,
         h_tol: float = 1e-8,
         rho_max: float = 1e16,
@@ -262,9 +263,13 @@ class NotearsMLP(nn.Module, BaseEstimator):
         rho, alpha, h = 1.0, 0.0, np.inf
         X_torch = torch.from_numpy(x).float().to(self.device)
         W_torch = torch.from_numpy(w).float().to(self.device)
+        if w_binary_mask:
+            binary_mask = torch.where(W_torch==0,0.0,1.0).to(self.device)  # NOTE: Specify elements to consider for loss
+        else:
+            binary_mask = torch.ones(W_torch.shape).to(self.device)
 
         for n_iter in range(max_iter):
-            rho, alpha, h = self._dual_ascent_step(X_torch, W_torch, rho, alpha, h, rho_max)
+            rho, alpha, h = self._dual_ascent_step(X_torch, W_torch, binary_mask, rho, alpha, h, rho_max)
 
             if h <= h_tol or rho >= rho_max:
                 break
@@ -282,7 +287,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
         )
 
     def _dual_ascent_step(
-        self, X: torch.Tensor, W: torch.Tensor, rho: float, alpha: float, h: float, rho_max: float
+        self, X: torch.Tensor, W: torch.Tensor, binary_mask: torch.Tensor,  rho: float, alpha: float, h: float, rho_max: float
     ) -> Tuple[float, float, float]:
         """
         Perform one step of dual ascent in augmented Lagrangian.
@@ -400,7 +405,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
 
             # sum the losses across all dist types
             for dist_type in self.dist_types:
-                loss = loss + (self.ls_gamma*dist_type.loss(X, X_hat)) + ((1-self.ls_gamma)*dist_type.adj_loss(W, adj))
+                loss = loss + (self.ls_gamma*dist_type.loss(X, X_hat)) + ((1-self.ls_gamma)*dist_type.adj_loss(W, adj, binary_mask))
 
             lagrange_penalty = 0.5 * rho * h_val * h_val + alpha * h_val
             # NOTE: both the l2 and l1 regularization are NOT applied to the bias parameters

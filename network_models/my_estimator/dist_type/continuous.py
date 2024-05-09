@@ -51,17 +51,20 @@ class DistTypeContinuous(DistTypeBase):
             Scalar pytorch tensor of the reconstruction loss between X and X_hat.
         """
 
-        return (0.5 / X.shape[0]) * torch.sum(
+        return (0.5 / (X.shape[0]*X.shape[1])) * torch.sum(
             (X_hat[:, self.idx] - X[:, self.idx]) ** 2
         )
     
-    def adj_loss(self, W: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
+    def adj_loss(self, W: torch.Tensor, adj: torch.Tensor, binary_mask: torch.Tensor) -> torch.Tensor:
         """
 
         """
+        masked_W = binary_mask * W
+        masked_adj = binary_mask * adj
+        nn_elems = torch.count_nonzero(binary_mask).item()
 
-        return (0.5 / W.shape[0]) * torch.sum(
-            (adj[:, self.idx] - W[:, self.idx]) ** 2
+        return (0.5 / nn_elems) * torch.sum(
+            (masked_adj[:, self.idx] - masked_W[:, self.idx]) ** 2
         )
 
 
