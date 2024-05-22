@@ -7,6 +7,7 @@ Utils for benchmarking of skeleton estimation methods.
 @author: I.Azuma
 """
 # %%
+import copy
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -20,7 +21,7 @@ from sklearn.metrics import mean_squared_error
 def g2array(g):
     return nx.adjacency_matrix(g).todense()
 
-def pair_melt(df):
+def pair_melt(orig_df):
     """
     Args:
         df (dataframe): Adjacency matrix
@@ -42,11 +43,50 @@ def pair_melt(df):
         3     Hepatocyte    Hepatoblast  1.683933
         0     Hepatocyte     Hepatocyte  0.000000
     """
+    df = copy.deepcopy(orig_df)
     df['Source']=df.index.tolist()
     df_melt = df.melt(id_vars='Source',var_name='Target').sort_values('value')
     df_melt = df_melt.sort_values(['Source','Target'])
     
     return df_melt
+
+def convert2binary(df):
+    mat = np.array(df)
+    for i in range(mat.shape[0]):
+        for j in range(i+1,mat.shape[1]):
+            if mat[i][j] > mat[j][i]:
+                mat[i][j] = 1
+                mat[j][i] = 0
+            else:
+                mat[j][i] = 1
+                mat[i][j] = 0
+    binary_df = pd.DataFrame(mat,index=df.index,columns=df.columns)
+    return binary_df
+
+def triu2flatten(df):
+    mat = np.array(df)
+    res = []
+    st_list = []
+    for i in range(mat.shape[0]):
+        for j in range(i+1,mat.shape[1]):
+            res.append(mat[i][j])
+            st_list.append((df.index.tolist()[i], df.columns.tolist()[j]))
+    return res, st_list
+
+def mat2flatten(df):
+    mat = np.array(df)
+    res = []
+    st_list = []
+    for i in range(mat.shape[0]):
+        for j in range(mat.shape[1]):
+            if i == j:
+                pass
+            else:
+                res.append(mat[i][j])
+                st_list.append((df.index.tolist()[i], df.columns.tolist()[j]))
+    return res, st_list
+
+# %% Visualization
 
 def plot_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference",ylabel="Estimated Adj Weight",title="",c="tab:blue"):
     assert len(y_true)==len(y_score), "! y_true and y_score must be the same length !"
@@ -86,11 +126,13 @@ def plot_sns_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference
         pvalue = round(pvalue,3)
 
     tmp_df = pd.DataFrame({"y_true":y_true,"y_score":y_score})
-
+    
     ax = sns.jointplot(data=tmp_df,x="y_true",y="y_score",kind="reg",color=c)
-    plt.text(.8,0.35,'R = {}'.format(str(round(total_cor,3))))
-    plt.text(.8,0.30,'P = {}'.format(str(pvalue)))
-    plt.text(.8,0.25,'RMSE = {}'.format(str(round(rmse,3))))
+    xmax, xmin = max(y_true), min(y_true)
+    ymax, ymin = max(y_score), min(y_score)
+
+    plt.text(xmin+.8*(xmax-xmin),ymin+0.35*(ymax-ymin),'R = {}'.format(str(round(total_cor,3))))
+    plt.text(xmin+.8*(xmax-xmin),ymin+0.30*(ymax-ymin),'P = {}'.format(str(pvalue)))
+    plt.text(xmin+.8*(xmax-xmin),ymin+0.25*(ymax-ymin),'RMSE = {}'.format(str(round(rmse,3))))
     plt.title(title)
-    plt.show()
     plt.show()
