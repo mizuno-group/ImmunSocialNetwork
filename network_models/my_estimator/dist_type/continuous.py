@@ -63,9 +63,12 @@ class DistTypeContinuous(DistTypeBase):
         masked_adj = binary_mask * adj
         nn_elems = torch.count_nonzero(binary_mask).item()
 
-        return (0.5 / nn_elems) * torch.sum(
-            (masked_adj[:, self.idx] - masked_W[:, self.idx]) ** 2
-        )
+        if nn_elems == 0:
+            return 0
+        else:
+            return (0.5 / nn_elems) * torch.sum(
+                (masked_adj[:, self.idx] - masked_W[:, self.idx]) ** 2
+            )
 
 
     def inverse_link_function(self, X_hat: torch.Tensor) -> torch.Tensor:

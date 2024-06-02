@@ -236,7 +236,7 @@ def from_numpy(
 # pylint: disable=too-many-arguments
 def from_pandas(
     X: pd.DataFrame,
-    W: pd.DataFrame,
+    W: pd.DataFrame = None,
     binary_mask: bool = True,
     dist_type_schema: Dict[Union[str, int], str] = None,
     ls_gamma: float = 0.5,
@@ -313,6 +313,9 @@ def from_pandas(
     """
 
     data = deepcopy(X)
+    if W is None:
+        W = pd.DataFrame(np.zeros((X.shape[1],X.shape[1])))
+        print("Analysis without W reference")
     w_data = deepcopy(W)
 
     # if dist_type_schema is not None, convert dist_type_schema from cols to idx
@@ -408,7 +411,7 @@ def from_pandas(
 
     return sm
 
-def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=1000000,do_plot=True):
+def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=1000000,do_plot=True,do_abs=False):
     if do_plot:
         # Visualize
         fig, ax = plt.subplots(figsize=(8, 8))
@@ -424,7 +427,7 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
 
         # Edge weight distribution
         fig,ax = plt.subplots()
-        weight_list = [d['weight'] for (u,v,d) in sm.edges(data=True)]
+        weight_list = [d['mean_effect'] for (u,v,d) in sm.edges(data=True)]
         plt.plot(sorted(weight_list))
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['top'].set_visible(False)
@@ -443,18 +446,21 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
     pn_labels = []
     source_labels = []
     target_labels = []
-    sorted_edge_list = sorted(sm_l.edges(data=True),key=lambda x : x[-1]['weight'],reverse=True)  # sort by weight
+    sorted_edge_list = sorted(sm_l.edges(data=True),key=lambda x : x[-1]['mean_effect'],reverse=True)  # sort by weight
     for (u,v,d) in sorted_edge_list:
-        if abs(d['weight']) < weight_threshold:
+        if abs(d['mean_effect']) < weight_threshold:
             continue
 
-        if d['weight'] > 0:
+        if d['mean_effect'] > 0:
             pn_labels.append('positive')
         else:
             pn_labels.append('negative')
         new_u = node_names.index(u)
         new_v = node_names.index(v)
-        dag.add_edge(new_u, new_v, weight=abs(d['weight']))
+        if do_abs:
+            dag.add_edge(new_u, new_v, weight=abs(d['mean_effect']))  # d['weight']
+        else:
+            dag.add_edge(new_u, new_v, weight=d['mean_effect'])
         new_idx.append('{} (interacts with) {}'.format(new_u,new_v))
         source_labels.append(new_u)
         target_labels.append(new_v)
