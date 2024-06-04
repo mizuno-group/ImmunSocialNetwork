@@ -134,5 +134,7 @@ def plot_sns_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference
     plt.text(xmin+.8*(xmax-xmin),ymin+0.35*(ymax-ymin),'R = {}'.format(str(round(total_cor,3))))
     plt.text(xmin+.8*(xmax-xmin),ymin+0.30*(ymax-ymin),'P = {}'.format(str(pvalue)))
     plt.text(xmin+.8*(xmax-xmin),ymin+0.25*(ymax-ymin),'RMSE = {}'.format(str(round(rmse,3))))
+    plt.xlabel("sc RNA-Seq CCC Reference")
+    plt.ylabel("Estimated Adj Weight")
     plt.title(title)
     plt.show()
