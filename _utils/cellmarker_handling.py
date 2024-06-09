@@ -7,6 +7,7 @@ Marker processing for CellMarker
 @author: I.Azuma
 """
 # %%
+import random
 import pandas as pd
 import codecs
 import collections
@@ -146,4 +147,34 @@ class CellMarkerHandler():
             else:
                 v_list.append(self.fine_dic.get(k))
         self.final_dic = dict(zip(k_list,v_list))
-            
+
+def random_marker_update(marker_dic,random_state=123,threshold=5):
+    """_summary_
+
+    Parameters
+    ----------
+    marker_dic : dict
+        e.g. {'Cell_A':['GeneA1','GeneA2','GeneA3','GeneA4',...], 'Cell_B':[...]}
+    random_state : int, optional
+        _description_, by default 123
+    threshold : int, optional
+        Maximum number of marker genes in each cell, by default 5
+
+    Returns
+    -------
+    dict
+        {'Cell_A':['GeneA1','GeneA5','GeneA10','GeneA16'], 'Cell_B':[...]}
+    """
+    random.seed(random_state) # Regulaize the marker extraction process
+    update_markers = []
+    for i,k in enumerate(marker_dic):
+        tmp_markers = sorted(list(set(marker_dic.get(k))))
+        if len(tmp_markers)>threshold:
+            ext_markers = random.sample(tmp_markers,threshold)
+            update_markers.append(ext_markers)
+        else:
+            update_markers.append(tmp_markers)
+
+    update_dic = dict(zip(list(marker_dic.keys()),update_markers))
+
+    return update_dic
