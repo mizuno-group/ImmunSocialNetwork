@@ -11,6 +11,63 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 
+import torch
+from torch.nn import Linear, Parameter
+
+from torch_geometric.utils import from_networkx
+from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import add_self_loops, degree, dense_to_sparse
+
+class DirectedMessagePassing(MessagePassing):
+    def __init__(self, in_channels, out_channels, weight_scale=1.0, add_norm=True, add_bias=False):
+        super().__init__(aggr='add')
+        self.bias = Parameter(torch.empty(out_channels))
+        self.reset_parameters()
+
+        self.weight_scale = weight_scale
+        self.add_norm = add_norm
+        self.add_bias = add_bias
+    
+    def reset_parameters(self):
+        self.bias.data.zero_()
+                
+    def forward(self, x, adj_matrix):
+        # 1. Extract edge_index and weight adj
+        edge_index, edge_weight = dense_to_sparse(adj_matrix)
+        max_v = edge_weight.abs().max()
+        edge_weight = self.weight_scale*edge_weight/max_v
+
+        # 2. Add self-loops to the adjacency matrix
+        edge_index, edge_weight = add_self_loops(edge_index, edge_weight, fill_value=1, num_nodes=x.size(0))
+
+        # 3. Normalize node features.
+        row, col = edge_index
+        deg = degree(col, x.size(0), dtype=x.dtype)
+        deg_inv_sqrt = deg.pow(-0.5)
+        norm = deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
+
+        # 4. Start propagating messages
+        out = self.propagate(edge_index, x=x, norm=norm)
+        
+        if self.add_bias:
+            out = out + self.bias
+            out = out.detach().numpy()
+        else:
+            pass
+
+        return out
+
+    def message(self, x_j, norm):
+        if self.add_norm:
+            return norm.view(-1, 1) * x_j
+        else:
+            return x_j
+    
+    def update(self, aggr_out):
+        # aggr_out has shape [N, out_channels]
+        return aggr_out
+
+
 def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=1000000,do_plot=True,do_abs=False):
     if do_plot:
         # Visualize
@@ -97,5 +154,6 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
     edge_colors = [dag.edges[edge]['color'] for edge in dag.edges()]
 
     nx.draw(dag, edge_color=edge_colors, labels=labels,width=graph_edge_widths, arrows=True, with_labels=True)
+    plt.show()
 
     return dag
