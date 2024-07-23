@@ -50,7 +50,9 @@ def pair_melt(orig_df):
     
     return df_melt
 
-def convert2binary(df):
+def convert2binary(raw_df):
+    fxn = lambda x : abs(x)
+    df = raw_df.applymap(fxn)  # 
     mat = np.array(df)
     for i in range(mat.shape[0]):
         for j in range(i+1,mat.shape[1]):
@@ -67,7 +69,7 @@ def convert2binary(df):
     binary_df = pd.DataFrame(mat,index=df.index,columns=df.columns)
     return binary_df
 
-def triu2flatten(df):
+def triu2flatten(df:pd.DataFrame):
     mat = np.array(df)
     res = []
     st_list = []
@@ -90,7 +92,8 @@ def mat2flatten(df):
                 st_list.append((df.index.tolist()[i], df.columns.tolist()[j]))
     return res, st_list
 
-def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[]):
+def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W_minmax=True,
+                scatter_color="tab:blue",xlabel='sc RNA-Seq CCC Reference',ylabel='Estimated Adj Weight'):
     res_range = adj_df.index.tolist()
     W_pro = pd.DataFrame(np.zeros((adj_df.shape[1], adj_df.shape[1])),index=res_range,columns=res_range)
     if len(common) == 0:
@@ -106,15 +109,18 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[]):
                     W_pro[c1].loc[c2] = W[c1].loc[c2]
 
     # minmax scaling
-    vmax = W_pro.max().max()
-    vmin = W_pro.min().min()
-    fxn = lambda x : (x-vmin)/(vmax-vmin)
-    mm_W = W_pro.applymap(fxn)
+    if W_minmax:
+        vmax = W_pro.max().max()
+        vmin = W_pro.min().min()
+        fxn = lambda x : (x-vmin)/(vmax-vmin)
+        final_W = W_pro.applymap(fxn)
+    else:
+        final_W = W_pro
 
     # intersecion cell types
     common = sorted(common)
     adj_common = adj_df[common].loc[common]
-    W_common = mm_W[common].loc[common]
+    W_common = final_W[common].loc[common]
     adj_melt = pair_melt(adj_common)
     w_melt = pair_melt(W_common)
 
@@ -143,8 +149,8 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[]):
 
     fig,ax = plt.subplots(figsize=(5,4))
     plt.scatter(y_true,y_score,color=c)
-    plt.xlabel('sc RNA-Seq CCC Reference')
-    plt.ylabel('Estimated Adj Weight')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.text(1.0,0.15,'R = {}'.format(str(round(total_cor,3))), transform=ax.transAxes)
     plt.text(1.0,0.05,'RMSE = {}'.format(str(round(rmse,3))), transform=ax.transAxes)
 
@@ -158,7 +164,23 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[]):
     plt.show()
 
     # scatterplots with distribution
-    plot_sns_scatter(y_true_posi, y_score_posi, c="tab:orange")
+    plot_sns_scatter(y_true_posi, y_score_posi, c=scatter_color, xlabel=xlabel,ylabel=ylabel,title="")
+
+    return adj_melt, w_melt
+
+def eval_confusion_matrix(w_res, a_res):
+    accuracy = round(metrics.accuracy_score(w_res,a_res),3)
+    precision = round(metrics.precision_score(w_res,a_res),3)
+    recall = round(metrics.recall_score(w_res,a_res),3)
+    f1 = round(metrics.f1_score(w_res,a_res),3)
+
+    print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+    cm = metrics.confusion_matrix(w_res, a_res)
+    sns.heatmap(cm, annot=True, cmap='Blues')
+    plt.xlabel("Estimated label")
+    plt.ylabel("True label")
+    plt.title(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+    plt.show()
 
 
 # %% Visualization
@@ -208,7 +230,7 @@ def plot_sns_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference
     plt.text(xmin+.8*(xmax-xmin),ymin+0.35*(ymax-ymin),'R = {}'.format(str(round(total_cor,3))))
     plt.text(xmin+.8*(xmax-xmin),ymin+0.30*(ymax-ymin),'P = {}'.format(str(pvalue)))
     plt.text(xmin+.8*(xmax-xmin),ymin+0.25*(ymax-ymin),'RMSE = {}'.format(str(round(rmse,3))))
-    plt.xlabel("sc RNA-Seq CCC Reference")
-    plt.ylabel("Estimated Adj Weight")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(title)
     plt.show()
