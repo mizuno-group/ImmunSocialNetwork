@@ -15,6 +15,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from scipy import stats
+from sklearn import metrics
 from sklearn.metrics import roc_curve
 from sklearn.metrics import mean_squared_error
 
@@ -92,7 +93,7 @@ def mat2flatten(df):
                 st_list.append((df.index.tolist()[i], df.columns.tolist()[j]))
     return res, st_list
 
-def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W_minmax=True,
+def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W_minmax=True,do_plot=True,
                 scatter_color="tab:blue",xlabel='sc RNA-Seq CCC Reference',ylabel='Estimated Adj Weight'):
     res_range = adj_df.index.tolist()
     W_pro = pd.DataFrame(np.zeros((adj_df.shape[1], adj_df.shape[1])),index=res_range,columns=res_range)
@@ -124,10 +125,11 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W
     adj_melt = pair_melt(adj_common)
     w_melt = pair_melt(W_common)
 
-    fig, ax = plt.subplots(1,2,figsize=(15,7))
-    sns.heatmap(W_common,cmap='Oranges',ax=ax[0])
-    sns.heatmap(adj_common,cmap='Purples',ax=ax[1])
-    plt.show()
+    if do_plot:
+        fig, ax = plt.subplots(1,2,figsize=(15,7))
+        sns.heatmap(W_common,cmap='Oranges',ax=ax[0])
+        sns.heatmap(adj_common,cmap='Purples',ax=ax[1])
+        plt.show()
 
     # scatter plots for overall relationships
     y_true = w_melt['value'].tolist()
@@ -147,28 +149,31 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W
         else:
             c.append('tab:blue')
 
-    fig,ax = plt.subplots(figsize=(5,4))
-    plt.scatter(y_true,y_score,color=c)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.text(1.0,0.15,'R = {}'.format(str(round(total_cor,3))), transform=ax.transAxes)
-    plt.text(1.0,0.05,'RMSE = {}'.format(str(round(rmse,3))), transform=ax.transAxes)
+    if do_plot:
+        fig,ax = plt.subplots(figsize=(5,4))
+        plt.scatter(y_true,y_score,color=c)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.text(1.0,0.15,'R = {}'.format(str(round(total_cor,3))), transform=ax.transAxes)
+        plt.text(1.0,0.05,'RMSE = {}'.format(str(round(rmse,3))), transform=ax.transAxes)
 
-    plt.gca().spines['right'].set_visible(False)
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().yaxis.set_ticks_position('left')
-    plt.gca().xaxis.set_ticks_position('bottom')
-    ax.set_axisbelow(True)
-    ax.grid(color="#ababab",linewidth=0.5)
-    plt.title(title)
-    plt.show()
+        plt.gca().spines['right'].set_visible(False)
+        plt.gca().spines['top'].set_visible(False)
+        plt.gca().yaxis.set_ticks_position('left')
+        plt.gca().xaxis.set_ticks_position('bottom')
+        ax.set_axisbelow(True)
+        ax.grid(color="#ababab",linewidth=0.5)
+        plt.title(title)
+        plt.show()
+
+    overall_score = {"R":round(total_cor,3),"RMSE":round(rmse,3)}
 
     # scatterplots with distribution
-    plot_sns_scatter(y_true_posi, y_score_posi, c=scatter_color, xlabel=xlabel,ylabel=ylabel,title="")
+    local_score = plot_sns_scatter(y_true_posi, y_score_posi, c=scatter_color, xlabel=xlabel,ylabel=ylabel,title="",do_plot=do_plot)
 
-    return adj_melt, w_melt
+    return adj_melt, w_melt, overall_score, local_score
 
-def eval_confusion_matrix(w_res, a_res):
+def eval_confusion_matrix(w_res, a_res, do_plot=True):
     accuracy = round(metrics.accuracy_score(w_res,a_res),3)
     precision = round(metrics.precision_score(w_res,a_res),3)
     recall = round(metrics.recall_score(w_res,a_res),3)
@@ -176,11 +181,16 @@ def eval_confusion_matrix(w_res, a_res):
 
     print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
     cm = metrics.confusion_matrix(w_res, a_res)
-    sns.heatmap(cm, annot=True, cmap='Blues')
-    plt.xlabel("Estimated label")
-    plt.ylabel("True label")
-    plt.title(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
-    plt.show()
+    if do_plot:
+        sns.heatmap(cm, annot=True, cmap='Blues')
+        plt.xlabel("Estimated label")
+        plt.ylabel("True label")
+        plt.title(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+        plt.show()
+
+    score_dict = {"cm":cm,"accuracy":accuracy,"precision":precision,"recall":recall,"f1":f1}
+
+    return score_dict
 
 
 # %% Visualization
@@ -211,7 +221,8 @@ def plot_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference",yl
     plt.title(title)
     plt.show()
 
-def plot_sns_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference",ylabel="Estimated Adj Weight",title="",c="tab:blue"):
+def plot_sns_scatter(y_true:list, y_score:list, 
+                     xlabel="sc RNA-Seq CCC Reference",ylabel="Estimated Adj Weight",title="",c="tab:blue", do_plot=True):
     assert len(y_true)==len(y_score), "! y_true and y_score must be the same length !"
 
     total_cor, pvalue = stats.pearsonr(y_score,y_true)  # Pearson correlation
@@ -223,14 +234,18 @@ def plot_sns_scatter(y_true:list, y_score:list, xlabel="sc RNA-Seq CCC Reference
 
     tmp_df = pd.DataFrame({"y_true":y_true,"y_score":y_score})
     
-    ax = sns.jointplot(data=tmp_df,x="y_true",y="y_score",kind="reg",color=c)
-    xmax, xmin = max(y_true), min(y_true)
-    ymax, ymin = max(y_score), min(y_score)
+    if do_plot:
+        ax = sns.jointplot(data=tmp_df,x="y_true",y="y_score",kind="reg",color=c)
+        xmax, xmin = max(y_true), min(y_true)
+        ymax, ymin = max(y_score), min(y_score)
 
-    plt.text(xmin+.8*(xmax-xmin),ymin+0.35*(ymax-ymin),'R = {}'.format(str(round(total_cor,3))))
-    plt.text(xmin+.8*(xmax-xmin),ymin+0.30*(ymax-ymin),'P = {}'.format(str(pvalue)))
-    plt.text(xmin+.8*(xmax-xmin),ymin+0.25*(ymax-ymin),'RMSE = {}'.format(str(round(rmse,3))))
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.show()
+        plt.text(xmin+.8*(xmax-xmin),ymin+0.35*(ymax-ymin),'R = {}'.format(str(round(total_cor,3))))
+        plt.text(xmin+.8*(xmax-xmin),ymin+0.30*(ymax-ymin),'P = {}'.format(str(pvalue)))
+        plt.text(xmin+.8*(xmax-xmin),ymin+0.25*(ymax-ymin),'RMSE = {}'.format(str(round(rmse,3))))
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.show()
+
+    score_dict = {"R":round(total_cor,3),"P":pvalue,"RMSE":round(rmse,3)}
+    return score_dict
