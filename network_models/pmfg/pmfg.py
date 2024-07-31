@@ -13,7 +13,7 @@ import networkx as nx
 from networkx.algorithms.planarity import check_planarity
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import planarity
 
 class GraphHandler:
     def __init__(self):
@@ -201,7 +201,7 @@ class PMFG(GraphHandler):
             print("Boyer's method")
             for e in tqdm(graph):
                 g.add_edge(e['source'],e['dest'],weight=e['weight'])
-                if check_planarity(g)[0]:
+                if planarity.is_planar(g):  # NOTE: 240731 update
                     n_edge = g.number_of_edges()
                     if n_edge==nmax:
                         print('--- terminated (#edge={} reached the max) ---'.format(n_edge))

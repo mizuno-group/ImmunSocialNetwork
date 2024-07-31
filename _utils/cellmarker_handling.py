@@ -146,6 +146,9 @@ class CellMarkerHandler():
                 v_list.append(tmp)
             else:
                 v_list.append(self.fine_dic.get(k))
+        
+        # male v_list unique
+        #v_list =[sorted(list(set(t))) for t in v_list]
         self.final_dic = dict(zip(k_list,v_list))
 
 def random_marker_update(marker_dic,random_state=123,threshold=5):
