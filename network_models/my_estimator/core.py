@@ -65,6 +65,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
         dist_types: List[DistTypeBase],
         use_bias: bool = False,
         use_gpu: bool = True,
+        reflect_mean_effect: bool = True,
         hidden_layer_units: Iterable[int] = (0,),
         bounds: List[Tuple[int, int]] = None,
         ls_gamma: float = 0.5,
@@ -104,6 +105,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
         self.lasso_beta = lasso_beta
         self.ridge_beta = ridge_beta
         self.nonlinear_clamp = nonlinear_clamp
+        self.reflect_mean_effect = reflect_mean_effect
 
         # cast to list for later concat.
         self.dims = (
@@ -399,7 +401,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
 
             n_features = X.shape[1]
             X_hat = self(X)
-            adj = self._calculate_adj(X,mean_effect=False)  # adjacency matrix
+            adj = self._calculate_adj(X, mean_effect=self.reflect_mean_effect)  # adjacency matrix
             h_val = self._h_func()
             loss = 0.0
 
