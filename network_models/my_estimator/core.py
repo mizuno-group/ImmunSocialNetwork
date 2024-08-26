@@ -555,7 +555,9 @@ class NotearsMLP(nn.Module, BaseEstimator):
                 adj.append(ddx.mean(axis=0).unsqueeze(0))
             else:
                 # otherwise, use the average L1 of the gradient as the W
-                adj.append(torch.abs(ddx).mean(dim=0).unsqueeze(0))
+                nn_ddx = torch.clamp(ddx, min=0.0)
+                adj.append(nn_ddx.mean(axis=0).unsqueeze(0))
+                #adj.append(torch.abs(ddx).mean(dim=0).unsqueeze(0))
 
         adj = torch.cat(adj, dim=0)
 
