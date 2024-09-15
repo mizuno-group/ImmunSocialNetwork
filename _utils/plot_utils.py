@@ -29,31 +29,54 @@ def plot_scatter(df,x='Macrophage',y='Dendritic cell'):
     ax.grid(color="#ababab",linewidth=0.5)
     plt.show()
 
-def plot_multi(data=[[11,50,37,202,7],[47,19,195,117,74],[136,69,33,47],[100,12,25,139,89]],names=["+PBS","+Nefopam","+Ketoprofen","+Cefotaxime"],value="ALT (U/I)",title="",grey=True,dpi=100,figsize=(12,6),lw=1,capthick=1,capsize=5):
-    sns.set()
-    sns.set_style('whitegrid')
-    if grey:
-        sns.set_palette('gist_yarg')
-        
-    fig,ax = plt.subplots(figsize=figsize,dpi=dpi)
+def plot_multi(data=[[11,50,37,202,7],[47,19,195,117,74],[136,69,33,47],[100,12,25,139,89]],
+               names=["A","B","C","D"], value="ALT (U/I)", title="", grey=True, dpi=300,
+               figsize=(8,6), lw=1.5, capthick=1.5, capsize=6):
+    sns.set(style="whitegrid")
+    #plt.rcParams['font.family'] = 'serif'
     
+    if grey:
+        sns.set_palette('Greys')
+    else:
+        sns.set_palette('coolwarm')
+
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+
     df = pd.DataFrame()
     for i in range(len(data)):
-        tmp_df = pd.DataFrame({names[i]:data[i]})
-        df = pd.concat([df,tmp_df],axis=1)
-    error_bar_set = dict(lw=lw,capthick=capthick,capsize=capsize)
-    if grey:
-        ax.bar([i for i in range(len(data))],df.mean(),yerr=df.std(),tick_label=df.columns,error_kw=error_bar_set)
-    else:
-        ax.bar([i for i in range(len(data))],df.mean(),yerr=df.std(),tick_label=df.columns,error_kw=error_bar_set)
-    # jitter plot
+        tmp_df = pd.DataFrame({names[i]: data[i]})
+        df = pd.concat([df, tmp_df], axis=1)
+
+    error_bar_set = dict(lw=lw, capthick=capthick, capsize=capsize)
+    ax.bar([i for i in range(len(data))], df.mean(), yerr=df.std(), tick_label=df.columns, 
+           error_kw=error_bar_set, color=sns.color_palette())
+
+    # Jitter plot with larger markers and edgecolor
     df_melt = pd.melt(df)
-    sns.stripplot(x='variable', y='value', data=df_melt, jitter=True, color='black', ax=ax, size=3)
+    sns.stripplot(x='variable', y='value', data=df_melt, jitter=True, size=6, 
+                  edgecolor='black', linewidth=0.6, ax=ax)
+    
+    # Draw lines between corresponding jitter points with slightly thicker lines
+    """
+    for i in range(len(data[0])):
+        y_values = [data[j][i] for j in range(len(data)) if i < len(data[j])]
+        ax.plot(range(len(y_values)), y_values, color='gray', linewidth=0.75, alpha=0.7)
+    """
+    for i in range(len(data[0])):
+        x1, y1 = ax.collections[1].get_offsets()[i] 
+        x2, y2 = ax.collections[2].get_offsets()[i]
+        ax.plot([x1, x2], [y1, y2], color='gray', linewidth=0.75, alpha=0.7) 
         
+
     ax.set_xlabel('')
-    ax.set_ylabel(value)
-    plt.title(title)
-    plt.xticks(rotation=60)
+    ax.set_ylabel(value, fontsize=12)
+    plt.title(title, fontsize=14, fontweight='bold')
+    plt.xticks(rotation=45, fontsize=10)
+    
+    # Add grid and adjust its appearance
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+    
+    plt.tight_layout()
     plt.show()
 
 def plot_radar(data=[[0.3821, 0.6394, 0.8317, 0.7524],[0.4908, 0.7077, 0.8479, 0.7802]],labels=['Neutrophils', 'Monocytes', 'NK', 'Kupffer'],conditions=['w/o addnl. topic','w/ addnl. topic'],title='APAP Treatment',dpi=100):
@@ -108,4 +131,32 @@ def plot_radar(data=[[0.3821, 0.6394, 0.8317, 0.7524],[0.4908, 0.7077, 0.8479, 0
     ax.set_facecolor('#FAFAFA')
     ax.set_title(title, y=1.02, fontsize=15)
     ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
+    plt.show()
+
+# %% Legacy
+def plot_multi_legacy(data=[[11,50,37,202,7],[47,19,195,117,74],[136,69,33,47],[100,12,25,139,89]],names=["+PBS","+Nefopam","+Ketoprofen","+Cefotaxime"],value="ALT (U/I)",title="",grey=True,dpi=100,figsize=(12,6),lw=1,capthick=1,capsize=5):
+    sns.set()
+    sns.set_style('whitegrid')
+    if grey:
+        sns.set_palette('gist_yarg')
+        
+    fig,ax = plt.subplots(figsize=figsize,dpi=dpi)
+    
+    df = pd.DataFrame()
+    for i in range(len(data)):
+        tmp_df = pd.DataFrame({names[i]:data[i]})
+        df = pd.concat([df,tmp_df],axis=1)
+    error_bar_set = dict(lw=lw,capthick=capthick,capsize=capsize)
+    if grey:
+        ax.bar([i for i in range(len(data))],df.mean(),yerr=df.std(),tick_label=df.columns,error_kw=error_bar_set)
+    else:
+        ax.bar([i for i in range(len(data))],df.mean(),yerr=df.std(),tick_label=df.columns,error_kw=error_bar_set)
+    # jitter plot
+    df_melt = pd.melt(df)
+    sns.stripplot(x='variable', y='value', data=df_melt, jitter=True, color='black', ax=ax, size=3)
+        
+    ax.set_xlabel('')
+    ax.set_ylabel(value)
+    plt.title(title)
+    plt.xticks(rotation=60)
     plt.show()

@@ -173,7 +173,7 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W
     """
 
     # scatterplots with distribution
-    y_true_posi, y_score_posi, overall_score = customized_scatter_plot(y_true, y_score, xlabel, ylabel, title=title, weight_threshold=0.1, do_plot=True)
+    y_true_posi, y_score_posi, overall_score = customized_scatter_plot(y_true, y_score, xlabel, ylabel, title=title, weight_threshold=weight_threshold, do_plot=True)
     local_score = plot_sns_scatter(y_true_posi, y_score_posi, 
                                    xlabel=xlabel,ylabel=ylabel,
                                    title=title,do_plot=do_plot,dpi=DPI)
@@ -220,12 +220,6 @@ def customized_scatter_plot(y_true, y_score, xlabel, ylabel, title, weight_thres
     - weight_threshold: Threshold for distinguishing colors
     - do_plot: Boolean flag to show plot
     """
-    total_cor, pvalue = stats.pearsonr(y_score,y_true)
-    rmse = np.sqrt(mean_squared_error(y_score, y_true))
-    if pvalue < 0.01:
-        pvalue = '{:.2e}'.format(pvalue)
-    else:
-        pvalue = round(pvalue,3)
 
     y_true_posi = []
     y_score_posi = []
@@ -240,42 +234,50 @@ def customized_scatter_plot(y_true, y_score, xlabel, ylabel, title, weight_thres
         else:
             c.append('tab:blue')
 
-    # Set the style and color palette
-    sns.set(style="whitegrid", context="talk")
-    palette = sns.color_palette(["#1f77b4", "#ff7f0e"])  # Define consistent color scheme
-
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(6, 5),dpi=DPI)
+    total_cor, pvalue = stats.pearsonr(y_score_posi,y_true_posi)
+    rmse = np.sqrt(mean_squared_error(y_score_posi, y_true_posi))
+    if pvalue < 0.01:
+        pvalue = '{:.2e}'.format(pvalue)
+    else:
+        pvalue = round(pvalue,3)
     
-    # Plot scatter with custom colors and aesthetics
-    scatter = ax.scatter(y_true, y_score, color=c, s=100, edgecolor='w', alpha=0.8)
+    if do_plot:
+        # Set the style and color palette
+        sns.set(style="whitegrid", context="talk")
+        palette = sns.color_palette(["#1f77b4", "#ff7f0e"])  # Define consistent color scheme
 
-    # Set axis labels
-    ax.set_xlabel(xlabel, fontsize=16, weight='bold')
-    ax.set_ylabel(ylabel, fontsize=16, weight='bold')
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(6, 5),dpi=DPI)
+        
+        # Plot scatter with custom colors and aesthetics
+        scatter = ax.scatter(y_true, y_score, color=c, s=100, edgecolor='w', alpha=0.8)
 
-    # Place text in the bottom right
-    ax.text(0.95, 0.15, f'R = {round(total_cor, 3)}', 
-            fontsize=14, weight='semibold', 
-            horizontalalignment='right', transform=ax.transAxes)
-    ax.text(0.95, 0.1, f'RMSE = {round(rmse, 3)}', 
-            fontsize=14, weight='semibold', 
-            horizontalalignment='right', transform=ax.transAxes)
-    plt.text(0.95, 0.05, f'P = {pvalue}', 
+        # Set axis labels
+        ax.set_xlabel(xlabel, fontsize=16, weight='bold')
+        ax.set_ylabel(ylabel, fontsize=16, weight='bold')
+
+        # Place text in the bottom right
+        ax.text(0.95, 0.15, f'R = {round(total_cor, 3)}', 
                 fontsize=14, weight='semibold', 
-                horizontalalignment='right', transform=ax.transAxes, fontstyle='italic')
+                horizontalalignment='right', transform=ax.transAxes)
+        ax.text(0.95, 0.1, f'RMSE = {round(rmse, 3)}', 
+                fontsize=14, weight='semibold', 
+                horizontalalignment='right', transform=ax.transAxes)
+        plt.text(0.95, 0.05, f'P = {pvalue}', 
+                    fontsize=14, weight='semibold', 
+                    horizontalalignment='right', transform=ax.transAxes, fontstyle='italic')
 
-    # Customize spines, ticks and grids
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.yaxis.set_ticks_position('left')
-    ax.xaxis.set_ticks_position('bottom')
-    ax.grid(color="#ababab", linewidth=0.5)
-    ax.set_axisbelow(True)
+        # Customize spines, ticks and grids
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.yaxis.set_ticks_position('left')
+        ax.xaxis.set_ticks_position('bottom')
+        ax.grid(color="#ababab", linewidth=0.5)
+        ax.set_axisbelow(True)
 
-    ax.set_title(title, fontsize=16, weight='bold')
-    plt.show()
-    
+        ax.set_title(title, fontsize=16, weight='bold')
+        plt.show()
+        
     overall_score = {"R":round(total_cor,3),"RMSE":round(rmse,3)}
     return y_true_posi, y_score_posi, overall_score
 

@@ -70,6 +70,7 @@ class DirectedMessagePassing(MessagePassing):
 
 def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=1000000,do_plot=True,do_abs=False):
     if do_plot:
+        """
         # Visualize
         fig, ax = plt.subplots(figsize=(8, 8))
         nx.draw_circular(sm,
@@ -81,6 +82,7 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
                         ax=ax)
         plt.plot()
         plt.show()
+        """
 
         # Edge weight distribution
         fig,ax = plt.subplots()
@@ -141,9 +143,6 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
         # Save networkx
         nx.write_gml(dag, save_dir+'/causualnex_dag.gml')
     
-    print("Node Size: {}".format(len(dag.nodes())))
-    print("Edge Size: {}".format(len(dag.edges())))
-
     # display
     id_list = [i for i in range(len(node_names))]
     name2id = dict(zip(node_names,id_list))
@@ -153,8 +152,12 @@ def create_dag(sm,node_names:list,save_dir=None,weight_threshold=0.0,edge_limit=
     labels = {k:id2name.get(k) for k in dag.nodes}
     edge_colors = [dag.edges[edge]['color'] for edge in dag.edges()]
 
-    nx.draw(dag, edge_color=edge_colors, labels=labels,width=graph_edge_widths, arrows=True, with_labels=True)
-    plt.show()
+    if do_plot:
+        print("Node Size: {}".format(len(dag.nodes())))
+        print("Edge Size: {}".format(len(dag.edges())))
+
+        nx.draw(dag, edge_color=edge_colors, labels=labels,width=graph_edge_widths, arrows=True, with_labels=True)
+        plt.show()
 
     return dag
 
