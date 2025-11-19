@@ -18,6 +18,7 @@ from scipy import stats
 from sklearn import metrics
 from sklearn.metrics import roc_curve
 from sklearn.metrics import mean_squared_error
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 DPI = 100
 
@@ -128,57 +129,72 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W
     w_melt = pair_melt(W_common)
 
     if do_plot:
-        fig, ax = plt.subplots(1,2,figsize=(15,7))
-        sns.heatmap(W_common,cmap='Oranges',ax=ax[0])
-        sns.heatmap(adj_common,cmap='Purples',ax=ax[1])
-        plt.show()
+        vis_dual_heatmaps(W_common, adj_common)
 
     # scatter plots for overall relationships
     y_true = w_melt['value'].tolist()
     y_score = adj_melt['value'].tolist()
-   
-
-    """
-    total_cor, pvalue = stats.pearsonr(y_score,y_true)
-    rmse = np.sqrt(mean_squared_error(y_score, y_true))
-    # scatter plots for dag positive edges
-    y_true_posi = []
-    y_score_posi = []
-    c = []
-    for i in range(len(y_score)):
-        if abs(y_score[i])>weight_threshold:
-            c.append('tab:orange')
-            y_score_posi.append(y_score[i])
-            y_true_posi.append(y_true[i])
-        else:
-            c.append('tab:blue')
-
-    if do_plot:
-        fig,ax = plt.subplots(figsize=(5,4))
-        plt.scatter(y_true,y_score,color=c)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.text(1.0,0.15,'R = {}'.format(str(round(total_cor,3))), transform=ax.transAxes)
-        plt.text(1.0,0.05,'RMSE = {}'.format(str(round(rmse,3))), transform=ax.transAxes)
-
-        plt.gca().spines['right'].set_visible(False)
-        plt.gca().spines['top'].set_visible(False)
-        plt.gca().yaxis.set_ticks_position('left')
-        plt.gca().xaxis.set_ticks_position('bottom')
-        ax.set_axisbelow(True)
-        ax.grid(color="#ababab",linewidth=0.5)
-        plt.title(title)
-        plt.show()
-    overall_score = {"R":round(total_cor,3),"RMSE":round(rmse,3)}
-    """
 
     # scatterplots with distribution
     y_true_posi, y_score_posi, overall_score = customized_scatter_plot(y_true, y_score, xlabel, ylabel, title=title, weight_threshold=weight_threshold, do_plot=True)
     local_score = plot_sns_scatter(y_true_posi, y_score_posi, 
                                    xlabel=xlabel,ylabel=ylabel,
-                                   title=title,do_plot=do_plot,dpi=DPI)
+                                   title="",do_plot=do_plot,dpi=DPI)
 
     return adj_melt, w_melt, overall_score, local_score
+
+
+def vis_dual_heatmaps(W_common, adj_common):
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5), dpi=DPI,
+                           gridspec_kw={"wspace": 0.75})
+
+    cmaps = ["Oranges", "Purples"]
+    titles = ["Estimated Weight Matrix", "Reference Adjacency Matrix"]
+
+    xlabel = "Target"
+    ylabel = "Source"
+
+    for i, (mat, cmap) in enumerate(zip([W_common, adj_common], cmaps)):
+
+        # seaborn heatmap（cbar=False）で描画
+        hm = sns.heatmap(
+            mat,
+            ax=ax[i],
+            cmap=cmap,
+            square=True,
+            annot=True,
+            fmt=".2f",
+            annot_kws={"size": 8},
+            linewidths=0.4,
+            linecolor="white",
+            cbar=False
+        )
+
+        # 軸ラベルなど
+        ax[i].set_xlabel(xlabel, fontsize=12)
+        ax[i].set_ylabel(ylabel, fontsize=12)
+        ax[i].set_title(titles[i], fontsize=14, pad=10)
+
+        # スパインを細く
+        for spine in ax[i].spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(0.6)
+            spine.set_color("gray")
+
+        # --- ★ 等高 colorbar を右に配置 ★ ---
+        divider = make_axes_locatable(ax[i])
+        cax = divider.append_axes("right", size="4%", pad=0.1)
+        plt.colorbar(hm.collections[0], cax=cax)
+
+    # tight_layout は square を崩す → 使用禁止
+    fig.subplots_adjust(
+        left=0.06, right=0.95,
+        top=0.92, bottom=0.10,
+        wspace=0.25
+    )
+
+    plt.show()
 
 def eval_confusion_matrix(w_res, a_res, do_plot=True):
     accuracy = round(metrics.accuracy_score(w_res,a_res),3)
