@@ -407,7 +407,7 @@ class NotearsMLP(nn.Module, BaseEstimator):
 
             # sum the losses across all dist types
             for dist_type in self.dist_types:
-                loss = loss + (self.ls_gamma*dist_type.loss(X, X_hat)) + ((1-self.ls_gamma)*dist_type.adj_loss(W, adj, binary_mask))
+                loss = loss + ((1-self.ls_gamma)*dist_type.loss(X, X_hat)) + (self.ls_gamma*dist_type.adj_loss(W, adj, binary_mask))  # NOTE: 251217 update
 
             lagrange_penalty = 0.5 * rho * h_val * h_val + alpha * h_val
             # NOTE: both the l2 and l1 regularization are NOT applied to the bias parameters

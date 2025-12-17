@@ -136,10 +136,10 @@ def eval_with_w(adj_df,W,do_abs=True,title="[]",weight_threshold=0.3,common=[],W
     y_score = adj_melt['value'].tolist()
 
     # scatterplots with distribution
-    y_true_posi, y_score_posi, overall_score = customized_scatter_plot(y_true, y_score, xlabel, ylabel, title=title, weight_threshold=weight_threshold, do_plot=True)
+    y_true_posi, y_score_posi, overall_score = customized_scatter_plot(y_true, y_score, xlabel, ylabel, title=title, weight_threshold=weight_threshold, do_plot=False)
     local_score = plot_sns_scatter(y_true_posi, y_score_posi, 
                                    xlabel=xlabel,ylabel=ylabel,
-                                   title="",do_plot=do_plot,dpi=DPI)
+                                   title=title,do_plot=do_plot,dpi=DPI)
 
     return adj_melt, w_melt, overall_score, local_score
 
