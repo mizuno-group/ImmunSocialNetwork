@@ -12,14 +12,134 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn import Linear, Parameter
 
-from torch_geometric.utils import from_networkx
+try:
+    from torch_sparse import spmm  # (edge_index, edge_weight, m, n, mat)
+except Exception as e:
+    spmm = None
+
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse
 
+import torch
+from torch_geometric.utils import dense_to_sparse, add_self_loops, degree
+
+
+class RandomWalkWithRestart(nn.Module):
+
+    def __init__(
+        self,
+        alpha: float = 0.2,          # restart prob
+        n_steps: int = 20,           # restart steps
+        add_self_loops: bool = True, 
+        eps: float = 1e-12,          
+        clamp_negative: bool = True, 
+    ):
+        super().__init__()
+        self.alpha = float(alpha)
+        self.n_steps = int(n_steps)
+        self.add_self_loops = bool(add_self_loops)
+        self.eps = float(eps)
+        self.clamp_negative = bool(clamp_negative)
+
+    @torch.no_grad()
+    def forward(self, x: torch.Tensor, adj: torch.Tensor):
+        """
+        x:   [N, F] node features
+        adj: [N, N] adjacency (dense)
+        return: [N, F] updated features
+        """
+        assert adj.dim() == 2 and adj.size(0) == adj.size(1), "adj must be [N,N]"
+        assert x.dim() == 2 and x.size(0) == adj.size(0), "x must be [N,F] with same N as adj"
+
+        A = adj.to(dtype=x.dtype, device=x.device)
+
+        # clamp
+        if self.clamp_negative:
+            A = A.clamp_min(0)
+
+        if self.add_self_loops:
+            A = A.clone()
+            idx = torch.arange(A.size(0), device=A.device)
+            A[idx, idx] = A[idx, idx] + 1.0
+
+        # row-stochastic: P = D^{-1} A
+        row_sum = A.sum(dim=1, keepdim=True).clamp_min(self.eps)
+        P = A / row_sum
+
+        H = x
+        a = self.alpha
+        for _ in range(self.n_steps):
+            H = (1.0 - a) * (P @ H) + a * x
+
+        return H
+
+def build_norm_adj_from_dense(adj_matrix: torch.Tensor, weight_scale: float = 1.0, add_self_loop: bool = True):
+    """
+    adj_matrix: [N, N] dense (directed/weighted OK)
+    return: edge_index [2, E], norm [E]  (norm = D^{-1/2} A D^{-1/2})
+    """
+    edge_index, edge_weight = dense_to_sparse(adj_matrix)
+
+    # scale (max=0対策込み)
+    max_v = edge_weight.abs().max()
+    if max_v > 0:
+        edge_weight = weight_scale * edge_weight / max_v
+    else:
+        edge_weight = edge_weight  # all zero case
+
+    if add_self_loop:
+        edge_index, edge_weight = add_self_loops(
+            edge_index, edge_weight, fill_value=1.0, num_nodes=adj_matrix.size(0)
+        )
+
+    row, col = edge_index
+    deg = degree(col, adj_matrix.size(0), dtype=edge_weight.dtype)
+    deg_inv_sqrt = deg.pow(-0.5)
+    deg_inv_sqrt[torch.isinf(deg_inv_sqrt)] = 0.0
+
+    norm = deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
+    return edge_index, norm
+
+
+@torch.no_grad()
+def message_passing_k_steps(
+    x: torch.Tensor,
+    adj_matrix: torch.Tensor,
+    k: int = 3,
+    weight_scale: float = 1.0,
+    add_self_loop: bool = True,
+    residual: bool = False,
+    renorm_each_step: bool = False,
+):
+    """
+    x: [N, F]
+    adj_matrix: [N, N] dense
+    k: message passing steps
+    residual: x <- x + MP(x) if True
+    renorm_each_step: recompute normalization at each step
+    """
+    assert k >= 1
+    if not renorm_each_step:
+        edge_index, norm = build_norm_adj_from_dense(adj_matrix, weight_scale, add_self_loop)
+
+    h = x
+    for _ in range(k):
+        if renorm_each_step:
+            edge_index, norm = build_norm_adj_from_dense(adj_matrix, weight_scale, add_self_loop)
+
+        # message passing
+        h_new = spmm(edge_index, norm, x.size(0), x.size(0), h)
+
+        h = h + h_new if residual else h_new
+
+    return h
+
 class DirectedMessagePassing(MessagePassing):
-    def __init__(self, in_channels, out_channels, weight_scale=1.0, add_norm=True, add_bias=False):
+    def __init__(self, out_channels, weight_scale=1.0, add_norm=True, add_bias=False):
         super().__init__(aggr='add')
         self.bias = Parameter(torch.empty(out_channels))
         self.reset_parameters()
